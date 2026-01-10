@@ -109,3 +109,4 @@ data/
 .uv/
 
 option_screener_logs/
+config.py
