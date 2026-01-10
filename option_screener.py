@@ -4,6 +4,7 @@ import os
 from datetime import datetime, timedelta
 from concurrent.futures import ThreadPoolExecutor
 from functools import lru_cache
+import sys
 
 import boto3
 import pandas as pd
@@ -16,10 +17,17 @@ from option_greeks import OptionGreeks
 from models import ScreenerCriteria
 import config
 
+log_dir = 'option_screener_logs'
+if not os.path.exists(log_dir):
+    os.makedirs(log_dir)
+
 logging.basicConfig(
-    filename='option_screener_logs/option_screener.log',
     level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler(os.path.join(log_dir, 'option_screener.log')),
+        logging.StreamHandler(sys.stdout)
+    ]
 )
 
 class OptionScreener:
@@ -41,7 +49,7 @@ class OptionScreener:
             current_rate = treasury_rate.iloc[-1] / 100
             return current_rate
         except Exception as e:
-            logging.error(f"Error getting risk-free rate: {e}")
+            logging.error(f"Error getting risk-free rate from FRED. Using default 4.25%")
             return 0.0425 
 
     def _get_earnings_robust(self, stock):
@@ -315,6 +323,7 @@ class OptionScreener:
 
                 s3_client = boto3.client(
                     's3',
+                    region_name=os.getenv('AWS_REGION'),
                     aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
                     aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY')
                 )
@@ -322,12 +331,13 @@ class OptionScreener:
                 s3_client.put_object(
                     Body=parquet_buffer.getvalue(), 
                     Bucket=bucket_name, 
-                    Key=file_key
+                    Key=file_key,
+                    ServerSideEncryption='AES256'
                 )
                 
-                logging.info(f"Successfully uploaded {file_key} to s3://{bucket_name}")
-                print(f"Success: Data uploaded to s3://{bucket_name}/{file_key}")
+                logging.info(f"Successfully uploaded {file_key} to S3 bucket.")
+                print(f"Success: Data uploaded to S3: .../{file_key}")
 
             except Exception as e:
                 logging.error(f"Error exporting to S3: {e}")
-                print(f"Error: {e}")
+                print("To debug detailed stack traces, run this script locally.")
