@@ -1,25 +1,21 @@
+import io
 import logging
 import os
-import warnings
 from datetime import datetime, timedelta
 from concurrent.futures import ThreadPoolExecutor
 from functools import lru_cache
 
+import boto3
 import pandas as pd
 import yfinance as yf
 from fredapi import Fred
 from dotenv import load_dotenv
 
-# --- SUPPRESS INTERNAL WARNINGS ---
-warnings.simplefilter(action='ignore', category=FutureWarning)
-# ----------------------------------
 
-# Internal Imports
 from option_greeks import OptionGreeks
 from models import ScreenerCriteria
 import config
 
-# Logging Configuration
 logging.basicConfig(
     filename='option_screener_logs/option_screener.log',
     level=logging.INFO,
@@ -109,14 +105,11 @@ class OptionScreener:
 
                 if not info: continue
 
-                # Get Price
                 price = info.get('regularMarketPrice') or info.get('currentPrice') or info.get('navPrice')
                 if not price: continue
 
-                # Get PE (Handle ETFs)
                 pe = info.get('trailingPE', 0.0)
 
-                # Get Earnings (Robust)
                 next_earnings = self._get_earnings_robust(stock)
 
                 div_date = info.get('dividendDate')
@@ -161,7 +154,6 @@ class OptionScreener:
             except:
                 greeks = pd.DataFrame(0, index=calls.index, columns=['delta', 'gamma', 'theta', 'vega', 'rho'])
 
-            # Calculations
             premium_return = (calls['lastPrice'] / S) * 100
             annualized_return = premium_return * (365 / dte_adj)
             out_of_the_money = ((calls['strike'] - S) / S) * 100
@@ -172,7 +164,6 @@ class OptionScreener:
             risk_reward_ratio = max_gain / loss_adj
             return_per_day = premium_return / dte_adj
 
-            # Dictionary Construction (Pandas 3.0 Safe)
             metrics_data = {
                 'expiration_date': date,
                 'days_to_expiry': days_to_expiry,
@@ -220,7 +211,6 @@ class OptionScreener:
                             .rename(columns=self.col_names)
                             .drop(columns=self.cols_to_drop, errors='ignore'))
 
-                # Broadcast stock metadata
                 meta_df = pd.DataFrame([stock_info] * len(combined), index=combined.index)
                 cols_to_use = meta_df.columns.difference(combined.columns)
                 final_combined = pd.concat([combined, meta_df[cols_to_use]], axis=1)
@@ -259,7 +249,6 @@ class OptionScreener:
 
             c = self.criteria
             
-            # Robust Query
             query_str = (
                 "strike >= stock_price and volume >= @c.min_volume and premium >= @c.min_premium and "
                 "delta.between(@c.min_delta, @c.max_delta) and "
@@ -301,72 +290,44 @@ class OptionScreener:
             logging.error(f"Error in screen_options: {e}")
             return pd.DataFrame()
 
-    def export_to_excel(self):
-        try:
-            results = self.screen_options()
-            if results.empty:
-                print("No opportunities to export.")
-                return
+    def export_to_s3(self):
+            """
+            Runs the screen and uploads the result directly to AWS S3 as a Parquet file.
+            """
+            try:
+                results = self.screen_options()
+                if results.empty:
+                    print("No opportunities to export.")
+                    return
 
-            today_str = datetime.now().strftime('%Y_%m_%d')
-            filename = f'covered_call_opportunities_{today_str}.xlsx'
+                today_str = datetime.now().strftime('%Y-%m-%d')
+                results['snapshot_date'] = pd.to_datetime(today_str)
 
-            clean_data = {}
-            for col in results.columns:
-                series = results[col]
-                if pd.api.types.is_datetime64_any_dtype(series):
-                    if series.dt.tz is not None:
-                        clean_data[col] = series.dt.tz_localize(None)
-                    else:
-                        clean_data[col] = series
-                else:
-                    clean_data[col] = series
-            
-            export_df = pd.DataFrame(clean_data)
-            cols_to_use = [c for c in self.final_col_order if c in export_df.columns]
-            export_df = export_df[cols_to_use]
+                parquet_buffer = io.BytesIO()
+                results.to_parquet(parquet_buffer, index=False)
+                parquet_buffer.seek(0)
 
-            with pd.ExcelWriter(filename, engine='xlsxwriter') as writer:
-                export_df.to_excel(writer, sheet_name='Opportunities', index=False)
-                workbook, worksheet = writer.book, writer.sheets['Opportunities']
+                bucket_name = os.getenv('S3_BUCKET_NAME')
+                if not bucket_name:
+                    raise ValueError("S3_BUCKET_NAME is missing from .env file")
+
+                file_key = f"raw_data/{today_str}.parquet"
+
+                s3_client = boto3.client(
+                    's3',
+                    aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
+                    aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY')
+                )
+
+                s3_client.put_object(
+                    Body=parquet_buffer.getvalue(), 
+                    Bucket=bucket_name, 
+                    Key=file_key
+                )
                 
-                money_fmt = workbook.add_format({'num_format': '#,##0.00'})
-                pct_fmt = workbook.add_format({'num_format': '0.00%'})
-                pct_sign_only_fmt = workbook.add_format({'num_format': '0.00"%"'})
-                greek_fmt = workbook.add_format({'num_format': '0.0000'})
-                comma_fmt = workbook.add_format({'num_format': '#,##0'})
+                logging.info(f"Successfully uploaded {file_key} to s3://{bucket_name}")
+                print(f"Success: Data uploaded to s3://{bucket_name}/{file_key}")
 
-                for idx, col in enumerate(export_df.columns):
-                    try:
-                        col_len = export_df[col].astype(str).map(len).max()
-                    except:
-                        col_len = 10
-                    max_len = max(col_len, len(str(col))) + 2
-
-                    if col in ['premium', 'stock_price', 'strike', 'max_gain', 'max_loss', 'break_even', 'bid', 'ask', 'change']:
-                        worksheet.set_column(idx, idx, 12, money_fmt)
-                    elif col in ['implied_volatility']:
-                        worksheet.set_column(idx, idx, 12, pct_fmt)
-                    elif col in ['premium_return', 'annualized_return', 'out_of_the_money', 'percent_change']:
-                        worksheet.set_column(idx, idx, 12, pct_sign_only_fmt)
-                    elif col in ['delta', 'gamma', 'theta', 'vega', 'rho']:
-                        worksheet.set_column(idx, idx, 12, greek_fmt)
-                    elif col in ['market_cap', 'open_interest', 'volume', 'stock_volume', 'stock_average_volume']:
-                        worksheet.set_column(idx, idx, 12, comma_fmt)
-                    else:
-                        worksheet.set_column(idx, idx, max_len)
-
-            print(f"Results exported successfully to {filename}")
-        except Exception as e:
-            logging.error(f"Error exporting to Excel: {e}")
-            print(f"Error: {e}")
-
-def main():
-    try:
-        screener = OptionScreener()
-        screener.export_to_excel()
-    except Exception as e:
-        print(f"Main Error: {e}")
-
-if __name__ == "__main__":
-    main()
+            except Exception as e:
+                logging.error(f"Error exporting to S3: {e}")
+                print(f"Error: {e}")
