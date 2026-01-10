@@ -1,0 +1,37 @@
+name: Daily Option Screener
+
+on:
+  # Schedule: Runs at 14:00 UTC (9:00 AM EST / 6:00 AM PST)
+  # Note: GitHub servers use UTC time.
+  schedule:
+    - cron: '0 14 * * 1-5' # Runs Mon-Fri only
+  
+  # Manual Trigger: Allows you to click a "Run Now" button in GitHub UI
+  workflow_dispatch:
+
+jobs:
+  run-screener:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+      
+      - name: Set up Python
+        run: uv python install 3.13
+
+      - name: Install Dependencies
+        run: uv sync --frozen
+
+      - name: Run Main Script
+        env:
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
+        run: uv run main.py
