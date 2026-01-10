@@ -1,0 +1,17 @@
+[project]
+name = "ml-options-screener"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "boto3>=1.42.25",
+    "fredapi>=0.5.2",
+    "numpy>=2.4.1",
+    "pandas>=2.3.3",
+    "pyarrow>=22.0.0",
+    "python-dotenv>=1.2.1",
+    "scipy>=1.16.3",
+    "xlsxwriter>=3.2.9",
+    "yfinance>=1.0",
+]

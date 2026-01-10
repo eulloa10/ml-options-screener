@@ -102,3 +102,8 @@ data/
 *.hdf5
 models/
 data/
+
+# uv (Python package manager)
+# Note: keep `uv.lock` committed for reproducible builds
+.python-version
+.uv/
