@@ -1,9 +1,12 @@
 # main.py
 import logging
 import sys
+import os
 from datetime import datetime
 
-from option_screener import OptionScreener
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from screener.option_screener import OptionScreener
 
 logging.basicConfig(
     level=logging.INFO,
