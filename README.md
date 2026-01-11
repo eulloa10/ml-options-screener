@@ -58,6 +58,10 @@ This project uses a **private** configuration file to store the watchlist and sc
 
 This project is configured to run automatically **every weekday at 10:00 AM Pacific Time**.
 
+- Automatic: Runs Mon-Fri at 18:00 UTC (10:00 AM PST / 11:00 AM PDT).
+
+- Manual: You can manually trigger a run via the Actions tab > Daily Option Screener > Run workflow.
+
 ## Required GitHub Secrets
 
 Navigate to:
