@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-import config
+from . import config
 
 @dataclass
 class ScreenerCriteria:

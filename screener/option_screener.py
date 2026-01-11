@@ -13,9 +13,9 @@ from fredapi import Fred
 from dotenv import load_dotenv
 
 
-from option_greeks import OptionGreeks
-from models import ScreenerCriteria
-import config
+from shared.option_greeks import OptionGreeks
+from shared.models import ScreenerCriteria
+from shared import config
 
 log_dir = 'option_screener_logs'
 if not os.path.exists(log_dir):
