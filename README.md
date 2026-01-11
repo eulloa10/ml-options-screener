@@ -15,14 +15,12 @@ The results are automatically processed and uploaded to an **AWS S3** Data Lake 
 
 ---
 
-## Local Setup & Installation
-
-Follow these steps to run the screener on your local machine.
+## Setup & Installation
 
 ### Prerequisites
 * Python 3.13+
-* [`uv`](https://github.com/astral-sh/uv) (Modern Python package manager)
-* AWS Account (S3 Bucket created)
+* [`uv`](https://github.com/astral-sh/uv)
+* [AWS Account](https://aws.amazon.com/s3/) (S3 bucket)
 * [FRED API Key](https://fred.stlouisfed.org/docs/api/api_key.html)
 
 ### Installing Dependencies
@@ -30,7 +28,7 @@ This project uses [`uv`](https://docs.astral.sh/uv/) for dependency management
 ```bash
 uv sync --frozen
 ```
-### Configuration (`config.py`)
+### Configuration
 
 This project uses a **private** configuration file to store the watchlist and screening parameters.
 
@@ -53,6 +51,8 @@ This project uses a **private** configuration file to store the watchlist and sc
    ```bash
    uv run main.py
    ```
+
+---
 
 # GitHub Actions Deployment
 
