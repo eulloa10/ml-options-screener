@@ -11,7 +11,7 @@ The results are automatically processed and uploaded to an **AWS S3** Data Lake 
 * **Multi-Source Data:** Integrates Yahoo Finance (market data) and FRED (Risk-Free Rate).
 * **Analytics:** Calculates Black-Scholes Greeks (Delta, Gamma, Theta, Vega) and proprietary risk metrics.
 * **Filtering:** Filters options based on Volume, Open Interest, Delta, Return on Risk and other metrics.
-* **Cloud Native:** Designed to run on **GitHub Actions** (scheduled M-F) and export to **AWS S3**.
+* **Cloud Native:** Designed to run on **GitHub Actions** (scheduled M-F) and export to **AWS S3** and **Google Sheets**.
 
 ---
 
@@ -49,7 +49,7 @@ This project uses a **private** configuration file to store the watchlist and sc
 
 ### Run Locally
    ```bash
-   uv run main.py
+   uv run screener/main.py
    ```
 
 ---
@@ -76,7 +76,9 @@ and add the following secrets:
 | `AWS_SECRET_ACCESS_KEY`  | IAM User Secret Key.                                                        |
 | `S3_BUCKET_NAME`         | The name of your S3 bucket (e.g., `my-data-lake`).                          |
 | `FRED_API_KEY`           | API key from Federal Reserve Economic Data.                                 |
-| `CONFIG_FILE_BASE64`     | **Crucial:** Your `config.py` file encoded as a Base64 string.              |
+| `CONFIG_FILE_BASE64`     | Your `config.py` file encoded as a Base64 string.              |
+| `GOOGLE_SHEET_ID`        | The long ID string found in your Google Sheet URL.              |
+| `GOOGLE_CREDENTIALS_BASE64`     | Your Service Account JSON key encoded as a Base64 string.              |
 
 The `config.py` file itself is **injected into the runner during the build process**, rather than being stored in the repository.
 
@@ -100,4 +102,3 @@ Run the following command in PowerShell:
 [Convert]::ToBase64String([IO.File]::ReadAllBytes(".\config.py")) | Set-Clipboard
 ``` 
 This reads `config.py`, encodes it as Base64, and copies the result to your clipboard.
-
