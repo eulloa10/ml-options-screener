@@ -22,6 +22,7 @@ The results are automatically processed and uploaded to an **AWS S3** Data Lake 
 * [`uv`](https://github.com/astral-sh/uv)
 * [AWS Account](https://aws.amazon.com/s3/) (S3 bucket)
 * [FRED API Key](https://fred.stlouisfed.org/docs/api/api_key.html)
+* [GCP Account for Google Sheets API](https://developers.google.com/workspace/sheets/api/guides/concepts)
 
 ### Installing Dependencies
 This project uses [`uv`](https://docs.astral.sh/uv/) for dependency management
