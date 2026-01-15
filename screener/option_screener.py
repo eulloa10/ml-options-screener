@@ -37,7 +37,10 @@ class OptionScreener:
         self.cols_to_drop = config.COLUMNS_TO_DROP
         self.final_col_order = config.FINAL_COLUMN_ORDER
         self.market_data = MarketDataService(fred_api_key=os.getenv('FRED_API_KEY'))
-        self.storage = StorageService(bucket_name=os.getenv('S3_BUCKET_NAME'))
+        self.storage = StorageService(
+            bucket_name=os.getenv('S3_BUCKET_NAME'),
+            google_sheet_id=os.getenv('GOOGLE_SHEET_ID')
+        )
         
         logging.info("OptionScreener initialized.")
 
@@ -221,7 +224,7 @@ class OptionScreener:
             logging.error(f"Error in screen_options: {e}")
             return pd.DataFrame()
 
-    def export_to_s3(self):
+    def export_data(self):
         """
         Runs the screen and uses StorageService to upload the result.
         """
@@ -235,11 +238,12 @@ class OptionScreener:
             results['snapshot_date'] = pd.to_datetime(today_str)
 
             file_key = f"raw_data/{today_str}.parquet"
-
             self.storage.upload_parquet(results, file_key)
-            
             print(f"Success: Data uploaded to S3: .../{file_key}")
 
+            self.storage.append_to_sheet(results)
+            print("Success: Data appended to Google Sheet.")
+
         except Exception as e:
-            logging.error(f"Error exporting to S3: {e}")
+            logging.error(f"Error during data export: {e}")
             print("To debug detailed stack traces, run this script locally.")

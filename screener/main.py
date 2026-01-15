@@ -28,7 +28,7 @@ def main():
         logging.info("Initializing Screener...")
         screener = OptionScreener()
 
-        screener.export_to_s3()
+        screener.export_data()
 
         duration = datetime.now() - start_time
         logging.info(f"--- Job Completed Successfully in {duration} ---")
