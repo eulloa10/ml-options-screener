@@ -34,7 +34,6 @@ def main():
         logging.info(f"--- Job Completed Successfully in {duration} ---")
 
     except Exception as e:
-        # Critical error handling ensures GitHub Actions marks the run as 'Failed'
         logging.critical(f"Job Failed: {e}", exc_info=True)
         sys.exit(1)
 
