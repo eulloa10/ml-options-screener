@@ -11,9 +11,23 @@ The results are automatically processed and uploaded to an **AWS S3** Data Lake 
 * **Multi-Source Data:** Integrates Yahoo Finance (market data) and FRED (Risk-Free Rate).
 * **Analytics:** Calculates Black-Scholes Greeks (Delta, Gamma, Theta, Vega) and proprietary risk metrics.
 * **Filtering:** Filters options based on Volume, Open Interest, Delta, Return on Risk and other metrics.
-* **Cloud Native:** Designed to run on **GitHub Actions** (scheduled M-F) and export to **AWS S3** and **Google Sheets**.
+* **Win/Loss Classification:** Automatically fetches historical closing prices to label past trades as "Profitable" or "Loss" for ML training.
+* **Data Archiving:** Automatically moves expired raw data to an archive folder to optimize performance and storage.
+* **Cloud Native:** Runs on **GitHub Actions** with a dual-schedule:
+    * **Daily:** Scans the market for new trades (M-F).
+    * **Weekly:** Labels expired trades and updates the training set (Mondays).
 
 ---
+
+## Project Roadmap
+
+**Machine Learning Integration (In Progress)**
+* [x] Build "Ground Truth" pipeline to label historical data
+* [ ] Exploratory Data Analysis (EDA) on collected S3 data
+* [ ] Feature Engineering (e.g., Vol/OI Ratio, Distance to Strike)
+* [ ] Train classification model to predict probability of profit
+* [ ] Implement model inference in the daily pipeline
+
 
 ## Setup & Installation
 
@@ -48,18 +62,29 @@ This project uses a **private** configuration file to store the watchlist and sc
    cp .env.example .env
    ```
 
-### Run Locally
+### Usage
+#### Run the Daily Screener
+Scans the market for current opportunities and uploads to S3 and Google Sheets.
+
    ```bash
    uv run screener/main.py
    ```
+#### Run the Labeling Pipeline (ML Data)
+Scans historical data in S3. If a trade has expired, it fetches the actual closing price to determine if it was a "Win" or "Loss" and saves it to training data bucket
 
+   ```bash
+   uv run screener/scripts/generate_labels.py
+   ```
 ---
 
 # GitHub Actions Deployment
 
-This project is configured to run automatically **every weekday at 10:00 AM Pacific Time**.
+The project runs on two separate schedules:
 
-- Automatic: Runs Mon-Fri at 18:00 UTC (10:00 AM PST / 11:00 AM PDT).
+| Workflow | Schedule | Description |
+| :--- | :--- | :--- |
+| **Daily Screener** | Mon-Fri @ 10:00 AM PT | Fetches live data, screens options, uploads to S3 & Google Sheets. |
+| **Weekly Labeling** | Mondays @ 6:30 AM PT | Checks past trades, labels outcomes, updates ML datasets. |
 
 - Manual: You can manually trigger a run via the Actions tab > Daily Option Screener > Run workflow.
 
