@@ -1,0 +1,35 @@
+name: Generate Training Labels (Weekly)
+
+on:
+  schedule:
+    # Runs at 12:00 UTC every Monday (approx 6:30 AM PST)
+    - cron: '30 14 * * 1'
+  
+  workflow_dispatch:
+
+jobs:
+  label-data:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+      
+      - name: Set up Python
+        run: uv python install 3.13
+
+      - name: Install Dependencies
+        run: uv sync --frozen
+
+      - name: Run Labeling Script
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
+          
+        run: uv run scripts/generate_labels.py
