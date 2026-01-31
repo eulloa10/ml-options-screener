@@ -113,4 +113,4 @@ config.py
 notes.py
 
 excel_files/
-screener/migrate_excel.py
+screener/scripts/migrate_excel.py
