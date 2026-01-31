@@ -32,4 +32,4 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
           
-        run: uv run scripts/generate_labels.py
+        run: uv run screener/scripts/generate_labels.py
