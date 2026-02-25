@@ -100,7 +100,7 @@ data/
 *.pickle
 *.h5
 *.hdf5
-models/
+ml_models/
 data/
 
 # uv (Python package manager)
@@ -114,3 +114,4 @@ notes.py
 
 excel_files/
 screener/scripts/migrate_excel.py
+
