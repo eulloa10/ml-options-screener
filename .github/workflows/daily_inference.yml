@@ -1,4 +1,4 @@
-name: Daily AI Options Inference
+name: Daily Options Inference
 
 on:
   workflow_run:
