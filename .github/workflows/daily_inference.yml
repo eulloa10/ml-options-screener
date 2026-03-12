@@ -1,0 +1,34 @@
+name: Daily AI Options Inference
+
+on:
+  workflow_run:
+      workflows: ["Daily Option Screener"]
+      types:
+        - completed
+  workflow_dispatch: 
+
+jobs:
+  run-inference:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install uv and Dependencies
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          uv pip install --system pandas joblib boto3 yfinance scikit-learn python-dotenv pyarrow
+
+      - name: Run Inference
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
+        run: python screener/scripts/predict_live_trades.py
