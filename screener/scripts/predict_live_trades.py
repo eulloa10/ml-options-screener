@@ -26,7 +26,6 @@ def get_live_predictions():
     with open('temp_config.json', 'r') as f:
         config = json.load(f)
 
-    # Clean up temp files
     os.remove('temp_model.joblib')
     os.remove('temp_config.json')
 
@@ -40,27 +39,22 @@ def get_live_predictions():
     except s3.exceptions.NoSuchKey:
         print(f"No data found for today ({today_str}) in S3. Did the scraper run?")
         return pd.DataFrame()
-    
 
+    # Fetch Live Macro Data
     print("Fetching live VIX and SPY data...")
-    # Get 14 days of history to ensure we can calculate a 5-day return
     macro_data = yf.download(['^VIX', 'SPY'], period='14d', progress=False)['Close']
-    
-    # Current VIX
     current_vix = macro_data['^VIX'].iloc[-1]
-    
-    # 5-Day SPY Return
     spy_series = macro_data['SPY']
     spy_5d_ret = (spy_series.iloc[-1] - spy_series.iloc[-6]) / spy_series.iloc[-6]
 
+    # Feature Engineering
     df['vix'] = current_vix
     df['spy_5d_return'] = spy_5d_ret   
-
     df['symbol'] = df['ticker']
     df['dte'] = df['days_to_expiry']
     df['distance_to_strike_pct'] = (df['strike'] - df['stock_price']) / df['stock_price']
     df['premium_yield'] = df['premium'] / df['stock_price']
-    df['yield_to_iv_ratio'] = (df['premium_yield'] * (365 / df['dte'])) / (df['implied_volatility'] + 0.001)
+    df['yield_to_iv_ratio'] = (df['premium_yield'] * (365 / (df['dte'] + 0.1))) / (df['implied_volatility'] + 0.001)
     df['vol_oi_ratio'] = df['volume'] / (df['open_interest'] + 1)
 
     print("Running AI inference...")
@@ -70,29 +64,50 @@ def get_live_predictions():
     picks = df[df['AI_Confidence_Score'] > 80].sort_values('AI_Confidence_Score', ascending=False)
 
     if picks.empty:
-        print("No trades met the >80% AI Confidence threshold today.")
+        print(f"No trades met the >80% threshold for {today_str}.")
         return pd.DataFrame()
 
-    report_cols = ['symbol', 'strike', 'expiration_date', 'premium', 'premium_yield', 'AI_Confidence_Score']
-    final_report = picks[report_cols].copy()
+    FINAL_COLUMN_ORDER = [
+        'company_name', 'ticker', 'contract_name',
+        'expiration_date', 'last_trade_date', 'stock_price',
+        'strike', 'premium', 'bid',
+        'ask', 'change', 'percent_change',
+        'volume', 'open_interest', 'implied_volatility',
+        'delta',  'gamma', 'theta',
+        'vega', 'rho', 'days_to_expiry',
+        'contract_size',  'premium_return', 'annualized_return',
+        'out_of_the_money', 'max_gain', 'max_loss',
+        'break_even', 'risk_reward_ratio', 'return_per_day',
+        'in_the_money', 'pe_ratio', 'stock_volume',
+        'stock_average_volume', 'market_cap', 'stock_beta',
+        'industry', 'average_analyst_rating', 'earnings_date',
+        'dividend_date', 'dividend_yield',
+        'vix', 'spy_5d_return', 'yield_to_iv_ratio', 
+        'vol_oi_ratio', 'distance_to_strike_pct', 'AI_Confidence_Score'
+    ]
+    
+    final_report = picks[FINAL_COLUMN_ORDER].copy()
+    
+    cols_to_pct = ['premium_return', 'annualized_return', 'spy_5d_return', 'distance_to_strike_pct']
+    for col in cols_to_pct:
+        final_report[col] = (final_report[col] * 100).round(2).astype(str) + '%'
     
     final_report['AI_Confidence_Score'] = final_report['AI_Confidence_Score'].round(2)
-    final_report['premium_yield'] = (final_report['premium_yield'] * 100).round(2).astype(str) + '%'
 
     export_filename = f"daily_ai_report_{today_str}.csv"
     # final_report.to_csv(export_filename, index=False)
     
-    print(f"Uploading report to S3: daily_ai_reports/{export_filename}")
-    s3.upload_file(export_filename, bucket, f"daily_ai_reports/{export_filename}")
+    print(f"Uploading report to S3: ai_reports/{export_filename}")
+    s3.upload_file(export_filename, bucket, f"ai_reports/{export_filename}")
     
     return final_report
 
 if __name__ == "__main__":
     recommendations = get_live_predictions()
     if not recommendations.empty:
-        print("\n" + "="*50)
-        print("AI DAILY OPTIONS REPORT")
-        print("="*50)
-        print(recommendations.to_string(index=False))
-        print("="*50)
-        print(f"✅ Report saved as CSV and ready for review.")
+        print("\n" + "="*60)
+        print(f"AI DAILY OPTIONS REPORT - {datetime.now().strftime('%Y-%m-%d')}")
+        print("="*60)
+        preview_cols = ['ticker', 'strike', 'expiration_date', 'premium', 'AI_Confidence_Score']
+        print(recommendations[preview_cols].to_string(index=False))
+        print("="*60)
