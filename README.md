@@ -21,13 +21,11 @@ The results are automatically processed and uploaded to an **AWS S3** Data Lake 
 
 ## Project Roadmap
 
-**Machine Learning Integration (In Progress)**
-* [x] Build "Ground Truth" pipeline to label historical data
-* [ ] Exploratory Data Analysis (EDA) on collected S3 data
-* [ ] Feature Engineering (e.g., Vol/OI Ratio, Distance to Strike)
-* [ ] Train classification model to predict probability of profit
-* [ ] Implement model inference in the daily pipeline
-
+**Current Phase: Persistence & Intelligence**
+* [ ] Migrate CSV/S3 reports to **Supabase (PostgreSQL)**
+* [ ] Implement **SendGrid** Email and SMS alerting logic
+* [ ] Launch private **Streamlit PWA** for mobile visualization
+* [ ] Integrate **LangChain** Data Agent for natural language insights
 
 ## Setup & Installation
 
@@ -85,6 +83,7 @@ The project runs on two separate schedules:
 | :--- | :--- | :--- |
 | **Daily Screener** | Mon-Fri @ 10:00 AM PT | Fetches live data, screens options, uploads to S3 & Google Sheets. |
 | **Weekly Labeling** | Mondays @ 6:30 AM PT | Checks past trades, labels outcomes, updates ML datasets. |
+| **ML Inference** | On "Daily Screener" Success | Success	Downloads latest model, runs predictions, and uploads CSV reports. |
 
 - Manual: You can manually trigger a run via the Actions tab > Daily Option Screener > Run workflow.
 
