@@ -114,4 +114,4 @@ notes.py
 
 excel_files/
 screener/scripts/migrate_excel.py
-
+screener/backtest_results/
