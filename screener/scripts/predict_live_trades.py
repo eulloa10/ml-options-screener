@@ -95,10 +95,12 @@ def get_live_predictions():
     final_report['AI_Confidence_Score'] = final_report['AI_Confidence_Score'].round(2)
 
     export_filename = f"daily_ai_report_{today_str}.csv"
-    # final_report.to_csv(export_filename, index=False)
+    final_report.to_csv(export_filename, index=False)
     
     print(f"Uploading report to S3: ai_reports/{export_filename}")
     s3.upload_file(export_filename, bucket, f"ai_reports/{export_filename}")
+
+    os.remove(export_filename)
     
     return final_report
 
