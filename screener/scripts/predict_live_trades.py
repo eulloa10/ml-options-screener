@@ -107,9 +107,6 @@ def get_live_predictions():
 if __name__ == "__main__":
     recommendations = get_live_predictions()
     if not recommendations.empty:
-        print("\n" + "="*60)
-        print(f"AI DAILY OPTIONS REPORT - {datetime.now().strftime('%Y-%m-%d')}")
-        print("="*60)
-        preview_cols = ['ticker', 'strike', 'expiration_date', 'premium', 'AI_Confidence_Score']
-        print(recommendations[preview_cols].to_string(index=False))
-        print("="*60)
+        print(f"✅ Inference complete. {len(recommendations)} trades identified and uploaded to S3.")
+    else:
+        print("No high-confidence trades found today.")
