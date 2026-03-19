@@ -69,6 +69,11 @@ def get_live_predictions():
     if picks.empty:
         print(f"No trades met the >80% threshold for {today_str}.")
         return pd.DataFrame()
+    
+
+    # print("Starting ETL to Supabase...")
+    # db_payload = transform_inference_to_db(picks)
+    # upsert_trade_report(db_payload)
 
     FINAL_COLUMN_ORDER = [
         'company_name', 'ticker', 'contract_name',
@@ -87,7 +92,7 @@ def get_live_predictions():
         'dividend_date', 'dividend_yield',
         'vix', 'spy_5d_return', 'yield_to_iv_ratio', 
         'vol_oi_ratio', 'distance_to_strike_pct', 'AI_Confidence_Score', 
-        'report_date'
+        'snapshot_date'
     ]
     
     final_report = picks[FINAL_COLUMN_ORDER].copy()
