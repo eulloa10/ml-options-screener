@@ -8,6 +8,9 @@ import yfinance as yf
 from datetime import datetime
 from dotenv import load_dotenv
 
+from screener.modules.transformations import transform_inference_to_db
+from screener.modules.database import upsert_trade_report 
+
 load_dotenv()
 
 def get_live_predictions():
@@ -83,7 +86,8 @@ def get_live_predictions():
         'industry', 'average_analyst_rating', 'earnings_date',
         'dividend_date', 'dividend_yield',
         'vix', 'spy_5d_return', 'yield_to_iv_ratio', 
-        'vol_oi_ratio', 'distance_to_strike_pct', 'AI_Confidence_Score'
+        'vol_oi_ratio', 'distance_to_strike_pct', 'AI_Confidence_Score', 
+        'report_date'
     ]
     
     final_report = picks[FINAL_COLUMN_ORDER].copy()
