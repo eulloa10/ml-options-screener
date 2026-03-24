@@ -50,16 +50,17 @@ st.title("Covered Call Screener")
 if df.empty:
     st.warning("No data found in the database. Run your inference pipeline first!")
 else:
-    # Get the latest date in the database
     latest_date = df['report_date'].max()
     st.success(f"Latest Data Synced: {latest_date}")
     st.subheader("Today's Top Picks")
     today_df = df[df['report_date'] == latest_date].sort_values(by='ai_confidence_score', ascending=False)
-    
-    display_cols = ['ticker', 'stock_price', 'strike', 'expiration_date', 'premium', 'annualized_return_pct','ai_confidence_score']
 
+    today_df['ticker_display'] = today_df['ticker'] + " (" + today_df['company_name'] + ")"
+
+    display_cols = ['ticker_display', 'stock_price', 'strike', 'expiration_date', 'premium', 'annualized_return_pct', 'ai_confidence_score']
+    
     my_column_config = {
-            "ticker": st.column_config.TextColumn("Ticker", width="small"),
+            "ticker_display": st.column_config.TextColumn("Ticker", width="medium"),
             "stock_price": st.column_config.NumberColumn("Price", format="%.2f", width="small"),
             "strike": st.column_config.NumberColumn("Strike", format="%.2f", width="small"),
             "expiration_date": st.column_config.DateColumn("Expiry", format="MMM DD, YYYY", width="medium"),
