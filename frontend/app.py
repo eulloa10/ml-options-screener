@@ -60,15 +60,15 @@ else:
 
     my_column_config = {
             "ticker": st.column_config.TextColumn("Ticker", width="small"),
-            "stock_price": st.column_config.NumberColumn("Price", format="$%.2f", width="small"),
-            "strike": st.column_config.NumberColumn("Strike", format="$%.2f", width="small"),
+            "stock_price": st.column_config.NumberColumn("Price", format="%.2f", width="small"),
+            "strike": st.column_config.NumberColumn("Strike", format="%.2f", width="small"),
             "expiration_date": st.column_config.DateColumn("Expiry", format="MMM DD, YYYY", width="medium"),
-            "premium": st.column_config.NumberColumn("Premium", format="$%.2f", width="small"),
+            "premium": st.column_config.NumberColumn("Premium", format="%.2f", width="small"),
             "annualized_return_pct": st.column_config.NumberColumn("Annualized Return", format="%.1f%%", width="small"),
             "ai_confidence_score": st.column_config.ProgressColumn(
                 "Win Probability",
                 help="Machine Learning Confidence",
-                format="%.1f",
+                format="%.1f%%",
                 min_value=0,
                 max_value=100,
                 width="medium" 
