@@ -1,30 +1,23 @@
-# ML-Powered Covered Call Screener (Active Development)
+# ML-Powered Covered Call Platform (Active Development)
 
-An end-to-end data engineering and machine learning pipeline designed to identify, analyze, and predict high-probability covered call opportunities.
-
-It fetches data from **Yahoo Finance**, calculates metrics (Greeks, Risk/Reward, Annualized Return), and filters based on risk management criteria.
-
-The results are automatically processed and uploaded to an **AWS S3** Data Lake as Parquet files for historical analysis and backtesting.
+An end-to-end data engineering and machine learning pipeline designed to identify, analyze, and predict high-probability covered call opportunities. This system moves data from raw market feeds to a live, mobile-optimized dashboard.
 
 ## Features
 
-* **Multi-Source Data:** Integrates Yahoo Finance (market data) and FRED (Risk-Free Rate).
-* **Analytics:** Calculates Black-Scholes Greeks (Delta, Gamma, Theta, Vega) and proprietary risk metrics.
-* **Filtering:** Filters options based on Volume, Open Interest, Delta, Return on Risk and other metrics.
-* **Win/Loss Classification:** Automatically fetches historical closing prices to label past trades as "Profitable" or "Loss" for ML training.
-* **Data Archiving:** Automatically moves expired raw data to an archive folder to optimize performance and storage.
-* **Cloud Native:** Runs on **GitHub Actions** with a dual-schedule:
-    * **Daily:** Scans the market for new trades (M-F).
-    * **Weekly:** Labels expired trades and updates the training set (Mondays).
+* **Data Lake:** Fetches live data from Yahoo Finance and FRED, storing Parquet files in AWS S3 for backtesting.
+* **Machine Learning:** Uses XGBoost to calculate a Win Probability for every trade based on Greeks (Delta, Theta, Gamma), implied volatility, and historical regime markers.
+* **Database:** Real-time persistence via Supabase (PostgreSQL) for sub-second dashboard performance.
+* **Dashboard:** A Streamlit interface accessible via mobile. Features a "Passcode Bouncer" for security and a "Historical Archive" for trade auditing.
+* **Automated Labeling:** A weekly "Backfiller" script that fetches closing prices to label expired trades as Wins/Losses, creating a self-improving feedback loop for the ML model.
+* **Cloud Native:** Fully orchestrated via GitHub Actions with an event-driven trigger system.
 
 ---
 
 ## Project Roadmap
 
-**Current Phase: Persistence & Intelligence**
-* [ ] Migrate CSV/S3 reports to **Supabase (PostgreSQL)**
+**Current Phase: Evaluation & Refinement**
+* [ ] [NEXT] Implement Model Monitoring (Accuracy vs. Confidence charts)
 * [ ] Implement **SendGrid** Email and SMS alerting logic
-* [ ] Launch private **Streamlit PWA** for mobile visualization
 * [ ] Integrate **LangChain** Data Agent for natural language insights
 
 ## Setup & Installation
@@ -35,6 +28,8 @@ The results are automatically processed and uploaded to an **AWS S3** Data Lake 
 * [AWS Account](https://aws.amazon.com/s3/) (S3 bucket)
 * [FRED API Key](https://fred.stlouisfed.org/docs/api/api_key.html)
 * [GCP Account for Google Sheets API](https://developers.google.com/workspace/sheets/api/guides/concepts)
+* [Supabase Account](https://supabase.com/)
+* [Streamlit Community Cloud](https://streamlit.io/cloud)
 
 ### Installing Dependencies
 This project uses [`uv`](https://docs.astral.sh/uv/) for dependency management
@@ -73,6 +68,15 @@ Scans historical data in S3. If a trade has expired, it fetches the actual closi
    ```bash
    uv run screener/scripts/generate_labels.py
    ```
+
+#### Run the Pipeline Locally
+   ```bash
+   # Run the Screener & Inference
+   uv run python -m screener.scripts.predict_live_trades
+
+   # Launch the Dashboard
+   uv run streamlit run frontend/app.py
+   ```
 ---
 
 # GitHub Actions Deployment
@@ -81,7 +85,7 @@ The project runs on two separate schedules:
 
 | Workflow | Schedule | Description |
 | :--- | :--- | :--- |
-| **Daily Screener** | Mon-Fri @ 10:00 AM PT | Fetches live data, screens options, uploads to S3 & Google Sheets. |
+| **Daily Screener** | Mon-Fri @ 9:45 AM PT | Fetches live data, screens options, uploads to S3 & Google Sheets. |
 | **Weekly Labeling** | Mondays @ 6:30 AM PT | Checks past trades, labels outcomes, updates ML datasets. |
 | **ML Inference** | On "Daily Screener" Success | Success	Downloads latest model, runs predictions, and uploads CSV reports. |
 
@@ -104,6 +108,8 @@ and add the following secrets:
 | `CONFIG_FILE_BASE64`     | Your `config.py` file encoded as a Base64 string.              |
 | `GOOGLE_SHEET_ID`        | The long ID string found in your Google Sheet URL.              |
 | `GOOGLE_CREDENTIALS_BASE64`     | Your Service Account JSON key encoded as a Base64 string.              |
+| `SUPABASE_URL`     | Your Supabase project URL              |
+| `SUPABASE_SERVICE_ROLE_KEY`     | Admin key for writing data from GitHub Actions.             |
 
 The `config.py` file itself is **injected into the runner during the build process**, rather than being stored in the repository.
 
