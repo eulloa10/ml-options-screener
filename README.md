@@ -4,11 +4,11 @@ An end-to-end data engineering and machine learning pipeline designed to identif
 
 ## Features
 
-* **Data Lake:** Fetches live data from Yahoo Finance and FRED, storing Parquet files in AWS S3 for backtesting.
-* **Machine Learning:** Uses XGBoost to calculate a Win Probability for every trade based on Greeks (Delta, Theta, Gamma), implied volatility, and historical regime markers.
-* **Database:** Real-time persistence via Supabase (PostgreSQL) for sub-second dashboard performance.
+* **Data Lake:** Fetches data from Yahoo Finance and FRED, storing Parquet files in AWS S3 for backtesting.
+* **Machine Learning:** Uses XGBoost to calculate a Win Probability for every trade based on Greeks (Delta, Theta, Gamma), implied volatility, and historical markers.
+* **Database:** ersistent storage via Supabase (PostgreSQL) to track daily picks and historical results for performance auditing.
 * **Dashboard:** A Streamlit interface accessible via mobile. Features a "Passcode Bouncer" for security and a "Historical Archive" for trade auditing.
-* **Automated Labeling:** A weekly "Backfiller" script that fetches closing prices to label expired trades as Wins/Losses, creating a self-improving feedback loop for the ML model.
+* **Automated Labeling:** A weekly script that fetches closing prices for expired options to categorize past picks as "In-the-Money" or "Out-of-the-Money," building a labeled dataset for future model retraining.
 * **Cloud Native:** Fully orchestrated via GitHub Actions with an event-driven trigger system.
 
 ---
