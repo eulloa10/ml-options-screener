@@ -33,9 +33,6 @@ def upsert_trade_report(df: pd.DataFrame, table_name: str = "daily_picks"):
     records = df.to_dict(orient='records')
 
     try:
-        # 'on_conflict' columns must match your SQL UNIQUE constraint exactly
-        # Note: 'report_date' is included to allow the same trade to be tracked 
-        # across multiple days as the model confidence changes.
         response = supabase.table(table_name).upsert(
             records, 
             on_conflict="ticker, strike, expiration_date, report_date"
@@ -46,8 +43,6 @@ def upsert_trade_report(df: pd.DataFrame, table_name: str = "daily_picks"):
         
     except Exception as e:
         print(f"❌ Supabase Error during upsert to '{table_name}': {e}")
-        # We don't want the whole pipeline to crash if one insert fails, 
-        # so we return None and log the error.
         return None
 
 if __name__ == "__main__":

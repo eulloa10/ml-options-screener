@@ -1,10 +1,10 @@
 name: Daily Option Screener
 
 on:
-  # Schedule: # Runs at 18:00 UTC (10:00 AM PST / 11:00 AM PDT)
+  # 16:45 UTC = 9:45 AM PDT / 8:45 AM PST
   # Note: GitHub servers use UTC time.
   schedule:
-    - cron: '0 18 * * 1-5' # Runs Mon-Fri only
+    - cron: '45 16 * * 1-5' # Runs Mon-Fri only
   
   # Manual Trigger: Allows you to click a "Run Now" button in GitHub UI
   workflow_dispatch:

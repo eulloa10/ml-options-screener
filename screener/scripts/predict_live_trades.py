@@ -71,9 +71,9 @@ def get_live_predictions():
         return pd.DataFrame()
     
 
-    # print("Starting ETL to Supabase...")
-    # db_payload = transform_inference_to_db(picks)
-    # upsert_trade_report(db_payload)
+    print("Starting ETL to Supabase...")
+    db_payload = transform_inference_to_db(picks)
+    upsert_trade_report(db_payload)
 
     FINAL_COLUMN_ORDER = [
         'company_name', 'ticker', 'contract_name',

@@ -44,8 +44,6 @@ def transform_inference_to_db(df):
             )
             clean_df[col] = pd.to_numeric(clean_df[col], errors='coerce').fillna(0)
 
-    # Handle Specialized Date Formats (e.g., 2026/04/30 or N/A)
-    # Postgres DATE type requires YYYY-MM-DD
     date_cols = ['expiration_date', 'earnings_date', 'last_trade_date']
     for col in date_cols:
         if col in clean_df.columns:
@@ -61,7 +59,10 @@ def transform_inference_to_db(df):
     if 'in_the_money' in clean_df.columns:
         clean_df['in_the_money'] = clean_df['in_the_money'].astype(str).str.upper() == 'TRUE'
 
-    # Replace invalid numeric strings with 0
+    # --- FIX 1: Fix the Pandas Deprecation Warning ---
+    pd.set_option('future.no_silent_downcasting', True)
+    
+    # Replace invalid string values with Numpy's NaN
     clean_df = clean_df.replace(['N/A', 'inf', '-inf', 'None'], np.nan)
     
     # Final Mapping to SQL Schema Names
@@ -75,8 +76,34 @@ def transform_inference_to_db(df):
     }
     clean_df = clean_df.rename(columns=mapping)
 
-    # Ensure AI score is a clean float
     if 'ai_confidence_score' in clean_df.columns:
         clean_df['ai_confidence_score'] = pd.to_numeric(clean_df['ai_confidence_score']).round(2)
+
+
+    for col in clean_df.columns:
+        if pd.api.types.is_datetime64_any_dtype(clean_df[col]):
+            clean_df[col] = clean_df[col].dt.strftime('%Y-%m-%d %H:%M:%S')
+
+    clean_df = clean_df.where(pd.notna(clean_df), None)
+
+    db_schema_columns = [
+        'report_date', 'company_name', 'ticker', 'contract_name',
+        'expiration_date', 'last_trade_date', 'stock_price',
+        'strike', 'premium', 'bid', 'ask', 'change', 'percent_change',
+        'volume', 'open_interest', 'implied_volatility',
+        'delta', 'gamma', 'theta', 'vega', 'rho', 'days_to_expiry',
+        'contract_size', 'premium_return_pct', 'annualized_return_pct',
+        'out_of_the_money_pct', 'max_gain', 'max_loss', 'break_even',
+        'risk_reward_ratio', 'return_per_day_pct', 'in_the_money',
+        'pe_ratio', 'stock_volume', 'stock_average_volume', 'market_cap',
+        'stock_beta', 'industry', 'average_analyst_rating', 'earnings_date',
+        'dividend_date', 'dividend_yield', 'vix', 'spy_5d_return_pct',
+        'yield_to_iv_ratio', 'vol_oi_ratio', 'distance_to_strike_pct',
+        'ai_confidence_score'
+    ]
+    
+    # Keep only the columns that exist in BOTH the dataframe and our schema list
+    final_cols = [c for c in db_schema_columns if c in clean_df.columns]
+    clean_df = clean_df[final_cols]
 
     return clean_df
