@@ -116,3 +116,5 @@ excel_files/
 screener/scripts/migrate_excel.py
 screener/scripts/upload_model_to_s3.py
 screener/backtest_results/
+
+.streamlit/
