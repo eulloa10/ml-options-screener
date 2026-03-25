@@ -50,31 +50,38 @@ st.title("Covered Call Screener")
 if df.empty:
     st.warning("No data found in the database. Run your inference pipeline first!")
 else:
+
+    df['ticker_display'] = df['ticker'] + " (" + df['company_name'] + ")"
+
+    display_cols = [
+        'ticker_display', 'stock_price', 'strike', 
+        'expiration_date', 'premium', 'annualized_return_pct', 
+        'ai_confidence_score'
+    ]
+    
+    my_column_config = {
+        "ticker_display": st.column_config.TextColumn("Ticker", width="medium"),
+        "stock_price": st.column_config.NumberColumn("Price", format="$%.2f", width="small"),
+        "strike": st.column_config.NumberColumn("Strike", format="$%.2f", width="small"),
+        "expiration_date": st.column_config.DateColumn("Expiry", format="MMM DD, YYYY", width="medium"),
+        "premium": st.column_config.NumberColumn("Premium", format="$%.2f", width="small"),
+        "annualized_return_pct": st.column_config.NumberColumn("Ann. Return", format="%.1f%%", width="small"),
+        "ai_confidence_score": st.column_config.ProgressColumn(
+            "Win Probability",
+            help="Machine Learning Confidence",
+            format="%.1f%%",
+            min_value=0,
+            max_value=100,
+            width="medium" 
+        )
+    }
+
+    # --- TODAY'S TOP PICKS ---
     latest_date = df['report_date'].max()
     st.success(f"Latest Data Synced: {latest_date}")
     st.subheader("Today's Top Picks")
-    today_df = df[df['report_date'] == latest_date].sort_values(by='ai_confidence_score', ascending=False)
-
-    today_df['ticker_display'] = today_df['ticker'] + " (" + today_df['company_name'] + ")"
-
-    display_cols = ['ticker_display', 'stock_price', 'strike', 'expiration_date', 'premium', 'annualized_return_pct', 'ai_confidence_score']
     
-    my_column_config = {
-            "ticker_display": st.column_config.TextColumn("Ticker", width="medium"),
-            "stock_price": st.column_config.NumberColumn("Price", format="%.2f", width="small"),
-            "strike": st.column_config.NumberColumn("Strike", format="%.2f", width="small"),
-            "expiration_date": st.column_config.DateColumn("Expiry", format="MMM DD, YYYY", width="medium"),
-            "premium": st.column_config.NumberColumn("Premium", format="%.2f", width="small"),
-            "annualized_return_pct": st.column_config.NumberColumn("Annualized Return", format="%.1f%%", width="small"),
-            "ai_confidence_score": st.column_config.ProgressColumn(
-                "Win Probability",
-                help="Machine Learning Confidence",
-                format="%.1f%%",
-                min_value=0,
-                max_value=100,
-                width="medium" 
-            )
-        }
+    today_df = df[df['report_date'] == latest_date].sort_values(by='ai_confidence_score', ascending=False)
 
     st.dataframe(
         today_df[display_cols],
@@ -85,21 +92,20 @@ else:
 
     st.divider()
 
+    # --- HISTORICAL ARCHIVE ---
     st.subheader("Historical Archive")
-        
     past_dates = df[df['report_date'] < latest_date]['report_date'].unique()
     
     if len(past_dates) == 0:
         st.info("No historical data available yet. Check back tomorrow after the next run.")
     else:
-        # Create a dropdown to select a past date (defaults to the most recent past date)
         selected_date = st.selectbox("Select a date to view past picks:", sorted(past_dates, reverse=True))
         
         historical_df = df[df['report_date'] == selected_date].sort_values(by='ai_confidence_score', ascending=False)
         
         st.dataframe(
             historical_df[display_cols],
-            use_container_width=True,
+            width='stretch',
             hide_index=True,
             column_config=my_column_config
-    )
+        )
