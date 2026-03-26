@@ -1,6 +1,7 @@
 import streamlit as st
 from supabase import create_client, Client
 import pandas as pd
+import datetime
 
 st.set_page_config(
     page_title="CC Options Tracker",
@@ -19,7 +20,7 @@ def check_password():
     if st.session_state["pwd_input"]:
         if st.session_state["pwd_input"] == st.secrets["APP_PASSCODE"]:
             st.session_state["password_correct"] = True
-            st.rerun() # Reloads the script from the top
+            st.rerun() 
         else:
             st.error("❌ Incorrect Passcode")
             
@@ -36,7 +37,7 @@ def init_connection() -> Client:
 
 supabase = init_connection()
 
-@st.cache_data(ttl=600) # Caches data for 10 minutes
+@st.cache_data(ttl=600) 
 def load_data():
     response = supabase.table("daily_picks").select("*").order("report_date", desc=True).execute()
     if response.data:
@@ -50,7 +51,11 @@ st.title("Covered Call Screener")
 if df.empty:
     st.warning("No data found in the database. Run your inference pipeline first!")
 else:
-
+    # --- 1. GLOBAL DATA PREP ---
+    # Convert string dates to datetime.date objects immediately to avoid TypeErrors
+    df['report_date'] = pd.to_datetime(df['report_date']).dt.date
+    
+    # Create the display column for the entire dataset
     df['ticker_display'] = df['ticker'] + " (" + df['company_name'] + ")"
 
     display_cols = [
@@ -76,12 +81,18 @@ else:
         )
     }
 
-    # --- TODAY'S TOP PICKS ---
-    latest_date = df['report_date'].max()
-    st.success(f"Latest Data Synced: {latest_date}")
+    # --- 2. MARKET STATUS LOGIC ---
+    today_date = datetime.date.today()
+    latest_db_date = df['report_date'].max()
+
+    if latest_db_date < today_date:
+        st.info(f"📅 **Market Status:** No high-confidence trades identified for {today_date.strftime('%B %d')}. Showing most recent data from {latest_db_date.strftime('%B %d')}.")
+    else:
+        st.success(f"✅ **Live Data:** Showing top picks for {latest_db_date.strftime('%B %d')}")
+
+    # --- 3. TODAY'S TOP PICKS ---
     st.subheader("Today's Top Picks")
-    
-    today_df = df[df['report_date'] == latest_date].sort_values(by='ai_confidence_score', ascending=False)
+    today_df = df[df['report_date'] == latest_db_date].sort_values(by='ai_confidence_score', ascending=False)
 
     st.dataframe(
         today_df[display_cols],
@@ -92,14 +103,20 @@ else:
 
     st.divider()
 
-    # --- HISTORICAL ARCHIVE ---
+    # --- 4. HISTORICAL ARCHIVE ---
     st.subheader("Historical Archive")
-    past_dates = df[df['report_date'] < latest_date]['report_date'].unique()
     
-    if len(past_dates) == 0:
-        st.info("No historical data available yet. Check back tomorrow after the next run.")
+    # Get all unique dates for the dropdown
+    all_available_dates = sorted(df['report_date'].unique(), reverse=True)
+    
+    if len(all_available_dates) == 0:
+        st.info("No historical data available yet.")
     else:
-        selected_date = st.selectbox("Select a date to view past picks:", sorted(past_dates, reverse=True))
+        selected_date = st.selectbox(
+            "Select a date to view past picks:", 
+            all_available_dates,
+            format_func=lambda x: x.strftime('%B %d, %Y')
+        )
         
         historical_df = df[df['report_date'] == selected_date].sort_values(by='ai_confidence_score', ascending=False)
         
