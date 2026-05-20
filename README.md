@@ -1,4 +1,4 @@
-# ML-Powered Covered Call Platform (Active Development)
+# ML-Powered Covered Call Platform
 
 An end-to-end data engineering and machine learning pipeline designed to identify, analyze, and predict high-probability covered call opportunities. This system moves data from raw market feeds to a live, mobile-optimized dashboard.
 
