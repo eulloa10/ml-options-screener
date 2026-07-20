@@ -4,7 +4,7 @@ An end-to-end data engineering and machine learning pipeline designed to identif
 
 ## Features
 
-* **Data Lake:** Fetches data from Yahoo Finance and FRED, storing Parquet files in AWS S3 for backtesting.
+* **Data Lake:** Fetches data from Yahoo Finance and FRED, storing Parquet files in AWS S3 for backtesting and other uses.
 * **Machine Learning:** Uses XGBoost to calculate a Win Probability for every trade based on Greeks (Delta, Theta, Gamma), implied volatility, and historical markers.
 * **Database:** ersistent storage via Supabase (PostgreSQL) to track daily picks and historical results for performance auditing.
 * **Dashboard:** A Streamlit interface accessible via mobile. Features a "Passcode Bouncer" for security and a "Historical Archive" for trade auditing.
